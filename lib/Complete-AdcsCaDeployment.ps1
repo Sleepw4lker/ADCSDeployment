@@ -152,40 +152,42 @@
 
         # Test if there is any CA Service installed
         If (-not (Test-Flag -Flags $CaSetupStatus -Flag $SETUP_SERVER_FLAG)) {
-            Write-Error "Seems there is no CA installed that could be configured?"
+            Write-Error "Seems there is no CA installed that could be configured! Aborting."
             return
         }
 
+        # This reads the CA Type from the Registry
         $CaType = Get-AdcsCaType
 
         # Steps specific for a subordinate CA
         If (($CaType -eq $ENUM_ENTERPRISE_SUBCA) -or ($CaType -eq $ENUM_STANDALONE_SUBCA)) {
 
-            # Test if there is a Certificate Request Pending
+            # Determine if there is a Certificate Request Pending
+            # Install CA Certificate if so
             If (Test-Flag -Flags $CaSetupStatus -Flag $SETUP_REQUEST_FLAG) {
 
                 # To Do: Try to cast the Certificate into an X509Certificate2 Object to ensure sanity, or even implement this as a Test Script
     
-                    # Ensuring that new CA Certificate File is in place
-                    If (Test-Path $CertFile) {
-                        # Updating Machine Policy to ensure Root CA Cert was downloaded from AD
-                        # This will both trigger Propagation via Group Policy and via AutoEnrollment
-                        certutil -pulse
-                        Start-Sleep -Second 15
-                        # Installing the CA Certificate
-                        certutil -installcert $CertFile
-    
-                        If ($LASTEXITCODE -ne 0) {
-                            Write-Error "An Error occurred while installing CA Certificate $($CertFile). Aborting!" 
-                            return
-                        }
+                # Ensuring that new CA Certificate File is in place
+                If (Test-Path $CertFile) {
+                    # Updating Machine Policy to ensure Root CA Cert was downloaded from AD
+                    # This will both trigger Propagation via Group Policy and via AutoEnrollment
+                    certutil -pulse
+                    Start-Sleep -Second 15
+                    # Installing the CA Certificate
+                    certutil -installcert $CertFile
+
+                    If ($LASTEXITCODE -ne 0) {
+                        Write-Error "An Error occurred while installing CA Certificate $($CertFile). Aborting!" 
+                        return
                     }
-                    Else { 
-                        Write-Error "No CA certificate found in $($CertFile). Aborting!"
-                        return 
-                    }
-    
                 }
+                Else { 
+                    Write-Error "No CA certificate found in $($CertFile). Aborting!"
+                    return 
+                }
+
+            }
 
             # Allow Renewal on Behalf of, which is required for Key-based Renewal
             If ($AllowRenewalOnBehalfOf.IsPresent) {
@@ -281,14 +283,10 @@
             auditpol /set /subcategory:"{0CCE9221-69AE-11D9-BED3-505054503030}" /success:enable /failure:enable
         }
 
-        # Clearing the existing CDP Configuration, leaving only the default local Path
-        Get-CaCrlDistributionPoint | Where-Object  { -not ($_.Uri -match ($env:Systemroot).Replace("\","\\")) } | Foreach-Object -Process {
-            Write-Verbose "Removing Default CDP $($_.Uri)"
-            Remove-CaCrlDistributionPoint $_.Uri -Force
-        } 
-
         # Clearing the existing AIA Configuration, leaving only the default local Path
-        Get-CaAuthorityInformationAccess | Where-Object  { -not ($_.Uri -match ($env:Systemroot).Replace("\","\\")) } | Foreach-Object -Process {
+        Get-CaAuthorityInformationAccess | Where-Object  { 
+            -not ($_.Uri -match ($CertEnrollFolder).Replace("\","\\")) 
+        } | Foreach-Object -Process {
             Write-Verbose "Removing Default AIA $($_.Uri)"
             Remove-CaAuthorityInformationAccess $_.Uri -Force
         }
@@ -324,6 +322,14 @@
             
             Add-CaAuthorityInformationAccess @Arguments
         }
+
+        # Clearing the existing CDP Configuration, leaving only the default local Path
+        Get-CaCrlDistributionPoint | Where-Object  { 
+            -not ($_.Uri -match ($CertEnrollFolder).Replace("\","\\")) 
+        } | Foreach-Object -Process {
+            Write-Verbose "Removing Default CDP $($_.Uri)"
+            Remove-CaCrlDistributionPoint $_.Uri -Force
+        } 
 
         ForEach ($Uri in $Cdp) {
 
@@ -364,20 +370,24 @@
 
         Stop-Service -Name CertSvc 
 
+        # Implement a delay if not using the default Software KSP
+        # Some HSM KSPs need some time to clean up their stuff before the Service can be started again
         If ((Get-AdcsKspName) -ne "Microsoft Software Key Storage Provider") {
-            Write-Host "Waiting $CA_SERVICE_STOP_WAIT_SECONDS Seconds for KSPs to close their Handles..." -ForegroundColor Yellow
+            Write-Warning "Waiting $CA_SERVICE_STOP_WAIT_SECONDS Seconds for KSPs to close their Handles..."
             Start-Sleep -Second $CA_SERVICE_STOP_WAIT_SECONDS
         }
 
         Start-Service -Name CertSvc 
 
+        # The CertSrv.Admin Interface won't be instantly available
+        # Thus we give it some time before tampering with it again
         Do {
 
             # We should not poll too often as every time the Query fails, we will
-            # have an ugly DCOM Error Message 10016 in the System Event Log
+            # get another ugly DCOM Error Message 10016 in the System Event Log
             Start-Sleep -Seconds $CA_SERVICE_START_WAIT_SECONDS
 
-            Write-Host "Waiting for the ICertAdmin2 Interface to become available..."
+            Write-Warning "Waiting for the ICertAdmin2 Interface to become available..."
 
         } While ((Test-AdcsServiceAvailability) -ne $True)
 
@@ -387,7 +397,7 @@
         # Issuing a new CRL
         certutil -CRL
 
-        $Cdp | Where-Object { $_ -match ("ldap://") } | ForEach-Object -Process {
+        $Cdp | Where-Object { $_.StartsWith("ldap://") } | ForEach-Object -Process {
 
             If ($_ -notmatch $DefaultLdapCdp) {
         
@@ -403,6 +413,5 @@
         
             }
         }
-
     }
 }
