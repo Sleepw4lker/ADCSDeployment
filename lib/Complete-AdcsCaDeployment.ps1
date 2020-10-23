@@ -270,13 +270,10 @@
         certutil -setreg CA\ValidityPeriodUnits $ValidityPeriodUnits  
         certutil -setreg CA\ValidityPeriod $ValidityPeriod
         certutil -setreg CA\EncryptionCSP\Provider $EncryptionCsp
+        certutil -setreg CA\EnforceX500NameLengths [Int]$EnforceX500NameLengths.IsPresent
 
         # Enabling Auditing at the CA Level
         certutil -setreg CA\Auditfilter $AuditFilter
-
-        If (-not ($EnforceX500NameLengths.IsPresent)) {
-            certutil -setreg CA\EnforceX500NameLengths 0
-        }
 
         # Enabling Auditing at the OS Level
         If ($AuditFilter -gt 0) {
