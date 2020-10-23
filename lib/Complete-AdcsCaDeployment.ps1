@@ -220,7 +220,7 @@
             }
 
             # Remove Microsoft specific Extensions from issued Certificates
-            If (-not ($KeepProprietaryExtensions)) {
+            If (-not ($KeepProprietaryExtensions.IsPresent)) {
 
                 # szOID_ENROLL_CERTTYPE_EXTENSION (v1 Template Name)
                 certutil -setreg policy\DisableExtensionList +1.3.6.1.4.1.311.20.2
@@ -275,7 +275,7 @@
         certutil -setreg CA\Auditfilter $AuditFilter
 
         If (-not ($EnforceX500NameLengths.IsPresent)) {
-            certutil -setreg ca\EnforceX500NameLengths 0
+            certutil -setreg CA\EnforceX500NameLengths 0
         }
 
         # Enabling Auditing at the OS Level
