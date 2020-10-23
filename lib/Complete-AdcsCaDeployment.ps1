@@ -375,7 +375,7 @@
 
             # We should not poll too often as every time the Query fails, we will
             # have an ugly DCOM Error Message 10016 in the System Event Log
-            Start-Sleep $CA_SERVICE_START_WAIT_SECONDS
+            Start-Sleep -Seconds $CA_SERVICE_START_WAIT_SECONDS
 
             Write-Host "Waiting for the ICertAdmin2 Interface to become available..."
 
