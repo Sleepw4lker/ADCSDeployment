@@ -77,6 +77,11 @@
         $CaPathLength,
 
         [Parameter(Mandatory=$False)]
+        [ValidateRange(0,5)]
+        [Int]
+        $LogLevel = 3,
+
+        [Parameter(Mandatory=$False)]
         [ValidateRange(0,365)]
         [Int]
         $ValidityPeriodUnits = 2,
@@ -252,7 +257,8 @@
         If ($DsConfigDn) {
             certutil -setreg CA\DSConfigDN $DsConfigDn
         }
-        
+
+        certutil -setreg CA\Loglevel $LogLevel
         certutil -setreg CA\CRLPeriodUnits $CrlPeriodUnits 
         certutil -setreg CA\CRLPeriod $CrlPeriod  
         certutil -setreg CA\CRLDeltaPeriodUnits $CrlDeltaPeriodUnits 
