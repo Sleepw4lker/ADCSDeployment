@@ -269,6 +269,7 @@
         certutil -setreg CA\CRLDeltaOverlapPeriod $CrlDeltaOverlapPeriod  
         certutil -setreg CA\ValidityPeriodUnits $ValidityPeriodUnits  
         certutil -setreg CA\ValidityPeriod $ValidityPeriod
+        certutil -setreg CA\EncryptionCSP\Provider $EncryptionCsp
 
         # Enabling Auditing at the CA Level
         certutil -setreg CA\Auditfilter $AuditFilter
@@ -281,11 +282,6 @@
         If ($AuditFilter -gt 0) {
             Write-Warning "Configuring local Audit Policy to enable Object Access Auditing for Certification Services. You should enforce this setting via a Group Policy!"
             auditpol /set /subcategory:"{0CCE9221-69AE-11D9-BED3-505054503030}" /success:enable /failure:enable
-        }
-
-        # If the EncryptionCsp has been specified, we make the setting in the Registry
-        If ($EncryptionCsp) {
-            certutil -setreg CA\EncryptionCSP\Provider $EncryptionCsp
         }
 
         # Clearing the existing CDP Configuration, leaving only the default local Path
