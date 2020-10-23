@@ -4,22 +4,22 @@ Signature="$Windows NT$"
 ; No [PolicyStatementExtension] necessary on the Root CA because 
 ; "All Issuance Policies" is always implied for self-signed certificates
 
-;[Extensions]
+[Extensions]
 
-; Uncomment for Compliance to ISIS-MTT (Common PKI) Standard
+; Uncomment for Compliance to Common PKI Standard
 ; WARNING: Dont forget to uncomment the above [Extensions] statement as well
 ; Key Usage Extension marked as Critical
 ; Key Usage Extension will be Stripped of DigitalSignature (Only Certificate Signing, Offline CRL Signing, and CRL Signing remaining)
 ; See https://support.microsoft.com/en-us/kb/888180 for more information
 
-;2.5.29.15 = AwIBBg==
-;Critical = 2.5.29.15
+2.5.29.15 = AwIBBg==
+Critical = 2.5.29.15
 
 ; Uncomment to remove specific Certificate Extensions
 ; Refer to https://support.microsoft.com/de-de/help/287547/object-ids-associated-with-microsoft-cryptography
 
-; 1.3.6.1.4.1.311.21.1= ; szOID_CERTSRV_CA_VERSION
-; 1.3.6.1.4.1.311.21.2= ; szOID_CERTSRV_PREVIOUS_CERT_HASH
+1.3.6.1.4.1.311.21.1= ; szOID_CERTSRV_CA_VERSION
+1.3.6.1.4.1.311.21.2= ; szOID_CERTSRV_PREVIOUS_CERT_HASH
 
 [Certsrv_Server]
 ; The following Settings will only have effect on CA Certificate renewals
@@ -33,11 +33,12 @@ RenewalValidityPeriodUnits=8
 ; However, many vendors (like Cisco) have not implemented PKCS#1 2.1, thus
 ; their devices cannot understand certificates from a CA that signs with 2.1
 ; For compatibility reasons, we will have to fall back to 1.5 in most cases
-; There are working attacks on 1.5, which are currently mitigated within
-; the actual products that use Certificates
+; There are working attacks on 1.5 in TLS, but none for PKI Certificates.
+; So this should be OK from a Security perspective.
+; If nothing is specified, 1.5 will be used.
 AlternateSignatureAlgorithm=0
 
 ; Uncomment if the Subject and Issuer of the Root CA Certificate must be encoded 
-; with UTF-8 (ISIS-MTT (Common PKI) Standard).
+; with UTF-8 (Common PKI Standard).
 ; Otherwise it will be encoded as PrintableString.
-; ForceUTF8=1
+ForceUTF8=1
