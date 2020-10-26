@@ -14,7 +14,7 @@ Complete-AdcsCaDeployment `
     -Certfile ".\certnew.cer" `
     -AuditFilter 126 `
     -ValidityPeriodUnits 2 `
-    -CrlPeriodUnits 4`
+    -CrlPeriodUnits 4 `
     -CrlPeriod "Days" `
     -CrlOverlapUnits 4 `
     -CrlOverlapPeriod "Days"
