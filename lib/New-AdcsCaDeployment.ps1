@@ -154,8 +154,14 @@
         }
 
         # Placing the capolicy.inf in the Windows Folder
-        # We must ensure that the capolicy.inf is stored in UTF-8 without BOM
-        Get-Content -Path $CaPolFile | Out-File -FilePath "$($env:systemroot)\capolicy.inf" -Encoding utf8 -Force
+        [void](Remove-Item -Path "$($env:systemroot)\capolicy.inf" -Force -ErrorAction SilentlyContinue)
+
+        # We must ensure that the capolicy.inf is stored in Windows-1252 (ANSI) to reflect Umlauts and the like
+        [System.IO.File]::WriteAllText(
+            "$($env:systemroot)\capolicy.inf",
+            (Get-Content -Path $CaPolFile -Encoding UTF8 -Raw),
+            [System.Text.Encoding]::GetEncoding('iso-8859-1')
+            )
 
         [void](New-Item -Path $CaDbDir -ItemType Directory -ErrorAction SilentlyContinue)
         [void](New-Item -Path $CaDbLogDir -ItemType Directory -ErrorAction SilentlyContinue)
