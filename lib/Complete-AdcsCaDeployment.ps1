@@ -8,7 +8,8 @@
             "Microsoft Software Key Storage Provider",
             "Utimaco CryptoServer Key Storage Provider",
             "nCipher Security World Key Storage Provider",
-            "SafeNet Luna Key Storage Provider"
+            "SafeNet Key Storage Provider",
+            "Cavium Key Storage Provider"
         )]
         [ValidateScript({Test-KspAvailability -Name $_})]
         [String]
