@@ -8,16 +8,19 @@
 
     process {
 
-        $KspList = certutil -csplist
-        $KspList | Foreach-Object -Process {
-            If ($_ -match $Name) {
-                return $True
-            }
+        # Seems that there is no Enumerate Method or the like to test the actual presence of a CSP/KSP.
+        # Thus we simply try to initialize with the given KSP name.
+        # If this does not fail, we can assume that KSP is installed on the System.
+
+        # https://github.com/pauldotknopf/WindowsSDK7-Samples/blob/master/security/certservices/certenroll/createsimplecertrequest/CreateSimpleCertRequest.cs
+        $CspInformationObject = New-Object -ComObject X509Enrollment.CCspInformation
+
+        Try {
+            $CspInformationObject.InitializeFromName($Name)
+            return $True
         }
-
-        Write-Warning "Key Storage Provider $Name not found on this machine!"
-        return $False
-
+        Catch {
+            return $False
+        }
     }
-    
 }
