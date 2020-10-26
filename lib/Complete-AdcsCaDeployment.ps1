@@ -289,7 +289,7 @@
             -not ($_.Uri -match ($CertEnrollFolder).Replace("\","\\")) 
         } | Foreach-Object -Process {
             Write-Verbose "Removing Default AIA $($_.Uri)"
-            Remove-CaAuthorityInformationAccess $_.Uri -Force
+            [void](Remove-CaAuthorityInformationAccess $_.Uri -Force)
         }
 
         ForEach ($Uri in $Aia) {
@@ -321,7 +321,7 @@
                 $Arguments.Add("AddToCertificateAia", $True)
             }
             
-            Add-CaAuthorityInformationAccess @Arguments
+            [void](Add-CaAuthorityInformationAccess @Arguments)
         }
 
         # Clearing the existing CDP Configuration, leaving only the default local Path
@@ -329,7 +329,7 @@
             -not ($_.Uri -match ($CertEnrollFolder).Replace("\","\\")) 
         } | Foreach-Object -Process {
             Write-Verbose "Removing Default CDP $($_.Uri)"
-            Remove-CaCrlDistributionPoint $_.Uri -Force
+            [void](Remove-CaCrlDistributionPoint $_.Uri -Force)
         } 
 
         ForEach ($Uri in $Cdp) {
@@ -364,7 +364,7 @@
                 $Arguments.Add("PublishDeltaToServer",$True)
             }
             
-            Add-CaCrlDistributionPoint @Arguments
+            [void](Add-CaCrlDistributionPoint @Arguments)
         }
 
         # Restarting Certificate Services to reflect new Configuration
