@@ -94,7 +94,7 @@
 
         [Parameter(Mandatory=$False)]
         [Switch]
-        $EnforceX500NameLengths, # We will allow Subject Strings longer than 64 Characters by default
+        $NoEnforceX500NameLengths, # We will not allow Subject Strings longer than 64 Characters by default, as this violates Common PKI
 
         [Parameter(Mandatory=$False)]
         [Switch]
@@ -261,6 +261,10 @@
             certutil -setreg CA\DSConfigDN $DsConfigDn
         }
 
+        If ($NoEnforceX500NameLengths.IsPresent) {
+            certutil -setreg CA\EnforceX500NameLengths 0
+        }
+
         certutil -setreg CA\Loglevel $LogLevel
         certutil -setreg CA\CRLPeriodUnits $CrlPeriodUnits 
         certutil -setreg CA\CRLPeriod $CrlPeriod  
@@ -273,7 +277,6 @@
         certutil -setreg CA\ValidityPeriodUnits $ValidityPeriodUnits  
         certutil -setreg CA\ValidityPeriod $ValidityPeriod
         certutil -setreg CA\EncryptionCSP\Provider $EncryptionCsp
-        certutil -setreg CA\EnforceX500NameLengths [Int]$EnforceX500NameLengths.IsPresent
 
         # Enabling Auditing at the CA Level
         certutil -setreg CA\Auditfilter $AuditFilter
