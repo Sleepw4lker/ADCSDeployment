@@ -139,13 +139,13 @@
         # Ensuring the Script will be run on a supported Operating System
         If ([int32](Get-WmiObject Win32_OperatingSystem).BuildNumber -lt $BUILD_NUMBER_WINDOWS_2012) {
             Write-Error "Script must be run on Windows Server 2012 or newer! Aborting."
-            Return 
+            return 
         }
 
         # Ensuring the Script will be run with Elevation
         If (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
             Write-Error "Script must be run as Administrator! Aborting."
-            Return
+            return
         }
 
         # Determine the current CA Setup Status
@@ -172,10 +172,14 @@
                 # Ensuring that new CA Certificate File is in place
                 If (Test-Path $CertFile) {
                     # Updating Machine Policy to ensure Root CA Cert was downloaded from AD
-                    # This will both trigger Propagation via Group Policy and via AutoEnrollment
+
+                    # TODO: We have a native cmdlet for this now...
                     certutil -pulse
+
                     Start-Sleep -Second 15
+                    
                     # Installing the CA Certificate
+                    # TODO: I am sure this can be done via native API Call
                     certutil -installcert $CertFile
 
                     If ($LASTEXITCODE -ne 0) {
@@ -200,13 +204,9 @@
         # Steps specific for Enterprise CAs
         If (($CaType -eq $ENUM_ENTERPRISE_ROOTCA) -or ($CaType -eq $ENUM_ENTERPRISE_SUBCA)) {
 
-            If ($AuditFilter -gt 0) {
-
-                # To set the policy configuration to enable audit of template events, run the following command:
-                # From <https://technet.microsoft.com/en-us/library/dn786432(v=ws.11).aspx> 
-                certutil -setreg policy\EditFlags +EDITF_AUDITCERTTEMPLATELOAD
-
-            }
+            # To set the policy configuration to enable audit of template events, run the following command:
+            # From <https://technet.microsoft.com/en-us/library/dn786432(v=ws.11).aspx> 
+            certutil -setreg policy\EditFlags +EDITF_AUDITCERTTEMPLATELOAD
 
         }
 
@@ -232,7 +232,7 @@
 
         }
 
-        # Settings required to issue Certificates compliant to BSI requirements
+        # Settings required to issue Certificates compliant to Common PKI requirements
         If (-not ($LegacyProfile).IsPresent) {
 
             # Force UTF-8 Encoding of Subject Names
@@ -249,6 +249,9 @@
 
             # szOID_CERTSRV_PREVIOUS_CERT_HASH (Previous CA Certificate Hash)
             certutil -setreg policy\DisableExtensionList +1.3.6.1.4.1.311.21.2
+
+            # szOID_APPLICATION_CERT_POLICIES (Application Policies)
+            certutil -setreg policy\DisableExtensionList +1.3.6.1.4.1.311.21.10
 
         }
 
@@ -361,10 +364,10 @@
                 }
             }
 
-            # File System Path
+            # UNC or File System Path
             If ($Uri -match "\\") {
-                $Arguments.Add("PublishToServer",$True)
-                $Arguments.Add("PublishDeltaToServer",$True)
+                $Arguments.Add("PublishToServer", $True)
+                $Arguments.Add("PublishDeltaToServer", $True)
             }
             
             [void](Add-CaCrlDistributionPoint @Arguments)
@@ -398,7 +401,7 @@
         # Deleting the old default CRLs
         Get-ChildItem -Path $CertEnrollFolder "$($CaName)*.crl" | Remove-Item
 
-        # Issuing a new CRL
+        # Issuing a new CRL - this might fail if a non-Standard LDAP Path was configured
         certutil -CRL
 
         $Cdp | Where-Object { $_.StartsWith("ldap://") } | ForEach-Object -Process {

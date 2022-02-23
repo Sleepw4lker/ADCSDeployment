@@ -1,0 +1,88 @@
+[Version]
+Signature="$Windows NT$"
+
+; Issuance Policies have to explicitly be specified for subordinate CAs
+; Setting "AllIssuancePolicy" is not recommended as this violates RFC5280
+; Instead, specific Issuance Policies should be used whenever possible
+;[PolicyStatementExtension]
+;Policies=AllIssuancePolicy
+
+;[AllIssuancePolicy]
+;OID=2.5.29.32.0
+
+[Extensions]
+
+; Uncomment for Compliance to Common PKI Standard
+; Key Usage Extension marked as Critical
+; Key Usage Extension will be Stripped of DigitalSignature (Only Certificate Signing, Offline CRL Signing, and CRL Signing remaining)
+; See https://support.microsoft.com/en-us/kb/888180 for more information
+
+2.5.29.15 = AwIBBg==
+Critical = 2.5.29.15
+
+[BasicConstraintsExtension]
+PathLength=0
+Critical=TRUE
+
+; Uncomment for Enhanced Key Usage Constraints
+; Always add Private Key Archival and OCSP Signing!
+;[EnhancedKeyUsageExtension] 
+;OID=1.3.6.1.4.1.311.21.5 ; CA Encryption Certificate
+;OID=1.3.6.1.4.1.311.20.2.1 ; Certificate Request Agent
+;OID=1.3.6.1.5.5.7.3.2 ; Client Authentication
+;OID=1.3.6.1.5.5.7.3.3 ; Code Signing
+;OID=1.3.6.1.4.1.311.10.3.12 ; Document Signing
+;OID=1.3.6.1.4.1.311.10.3.4 ; Encrypting file system
+;OID=1.3.6.1.4.1.311.10.3.4.1 ; File Recovery
+;OID=1.3.6.1.5.5.7.3.5 ; IP Security End System
+;OID=1.3.6.1.5.5.8.2.2 ; IP Security IKE Intermediate
+;OID=1.3.6.1.5.5.7.3.6 ; IP Security Tunnel Endpoint
+;OID=1.3.6.1.5.5.7.3.7 ; IP Security User
+;OID=1.3.6.1.4.1.311.10.3.11 ; Key Recovery
+;OID=1.3.6.1.5.2.3.5 ; KDC Authentication
+;OID=1.3.6.1.4.1.311.10.3.1 ; Microsoft Trust List Signing
+;OID=1.3.6.1.4.1.311.10.3.10 ; Qualified Subordination
+;OID=1.3.6.1.4.1.311.10.3.9 ; Root List Signer
+;OID=1.3.6.1.5.5.7.3.4 ; Secure E-mail
+;OID=1.3.6.1.5.5.7.3.1 ; Server Authentication
+;OID=1.3.6.1.4.1.311.20.2.2 ; Smart Card Logon
+;OID=1.3.6.1.5.5.7.3.8 ; Time Stamping
+;OID=1.3.6.1.5.5.7.3.9 ; OCSP Signing
+;OID=1.3.6.1.4.1.311.54.1.2 ; Remote Desktop Authentication
+;OID=1.3.6.1.4.1.311.21.5 ; Private Key Archival
+;Critical=TRUE
+
+; Uncomment and edit for Adding one or more Issuance Policies (aka CP/CPS)
+;[PolicyStatementExtension]
+;Policies=InternalPolicy
+
+; Specifies the reference to the CPS Document
+;[InternalPolicy]
+;OID=1.3.6.1.4.1.99999.300.2.1.4.3.1
+;Notice=CPS is to be found at: http://pki.adcslabor.de/CPS/index.html
+;URL=http://pki.adcslabor.de/CPS/index.html
+
+[Certsrv_Server]
+; The following Settings will only have effect on CA Certificate renewals
+RenewalKeyLength=256
+
+; LoadDefaultTemplates=0 will prevent the CA from instantly loading default 
+; Certificate Templates after CA installation
+LoadDefaultTemplates=0
+
+; AlternateSignatureAlgorithm=0 makes the CA use PKCS#1 1.5 for Signatures
+; AlternateSignatureAlgorithm=1 makes the CA use PKCS#1 2.1 for Signatures
+; From a security perspective, PKCS#1 2.1 is recommended.
+; However, many vendors (like Cisco) have not implemented PKCS#1 2.1, thus
+; their devices cannot understand certificates from a CA that signs with 2.1
+; For compatibility reasons, we will have to fall back to 1.5 in most cases
+; There are working attacks on 1.5 in TLS, but none for PKI Certificates.
+; So this should be OK from a Security perspective.
+; If nothing is specified, 1.5 will be used.
+AlternateSignatureAlgorithm=0
+
+; EnableKeyCounting configures the CA to increment a counter every time the CA 
+; signing key is used. Do not enable this setting unless you have a Hardware 
+; Security Module (HSM) and associated Key Storage Provider (KSP) that support 
+; key counting. The Microsoft Software KSP does NOT support key counting.
+;EnableKeyCounting=0

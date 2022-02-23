@@ -1,4 +1,5 @@
-﻿function New-AdcsCaDeployment {
+﻿#Requires -Modules @{ ModuleName="ServerManager"; ModuleVersion="2.0.0.0" }
+function New-AdcsCaDeployment {
 
     [cmdletbinding(DefaultParameterSetName = "StandaloneRootCA")]
     param (
@@ -36,8 +37,9 @@
 
         [Parameter(ParameterSetName = "StandaloneRootCA", Mandatory=$False)]
         [Parameter(ParameterSetName = "EnterpriseRootCA", Mandatory=$False)]
+        [ValidateScript({$_ -in (Get-Timezone -ListAvailable).Id})]
         [String]
-        $DesiredTimeZone = "W. Europe Standard Time", # Get-Timezone -ListAvailable | ft StandardName
+        $DesiredTimeZone = "W. Europe Standard Time",
 
         # Specific to Subordinate CAs
         
@@ -82,7 +84,7 @@
         $KspName = "Microsoft Software Key Storage Provider",
 
         [Parameter(Mandatory=$False)]
-        [ValidateSet("RSA")] # Well... ECC is not implemented, yet
+        [ValidateSet("RSA","ECDSA_P256","ECDSA_P384","ECDSA_P521")]
         [String]
         $KeyAlgorithm = "RSA",
 
@@ -104,7 +106,6 @@
 
     begin {
         New-Variable -Option Constant -Name BUILD_NUMBER_WINDOWS_2012 -Value 9200
-        New-Variable -Option Constant -Name REBOOT_DELAY_SECONDS -Value 30
         New-Variable -Option Constant -Name SETUP_SERVER_FLAG -Value 1
 
         If ($StandaloneRootCA.IsPresent) { $CaType = "StandaloneRootCA" }
@@ -117,46 +118,44 @@
 
         # Ensuring the Script will be run on a supported Operating System
         If ([int32](Get-WmiObject Win32_OperatingSystem).BuildNumber -lt $BUILD_NUMBER_WINDOWS_2012) {
-            Write-Error "Script must be run on Windows Server 2012 or newer! Aborting."
+            Write-Error -Message "This must be run on Windows Server 2012 or newer! Aborting."
             Return 
         }
 
         # Ensuring the Script will be run with Elevation
         If (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-            Write-Error "Script must be run as Administrator! Aborting."
+            Write-Error -Message "This must be run as Administrator! Aborting."
             Return
         }
 
-        # Time Zone is important especially on a Standalone CA.
-        # Otherwise we mess up our issued Certificates.
-        # We assume that an Enterprise CA has working time synchronization.
-        If (($CaType -match "Standalone*") -and (Get-TimeZone).StandardName -ne $DesiredTimeZone) {
+        # Time Zone is important especially on a Standalone CA. Otherwise we mess up our issued Certificates.
+        # For an Enterprise CA, we assume that there is working time synchronization.
+        If (($CaType -match "Standalone*") -and (Get-TimeZone).Id -ne $DesiredTimeZone) {
             Write-Error "System Time Zone is not $DesiredTimeZone!"
             Return
         }
 
-        # Checking if Interactive Services Detection is enabled
-        # If Interactive Services Detection is not enabled, we must reboot
+        # Checking if Interactive Services Detection is enabled. If not, we must reboot after setting it.
         If (($AllowAdminInteraction.IsPresent) -and (((Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Windows" -Name NoInteractiveServices -ErrorAction SilentlyContinue).NoInteractiveServices) -ne 0)) {
 
             # Setting the correct value for Interactive Services Detection
-            Write-Warning "Enabling Interactive Services Detection. This requires rebooting the machine before we continue."
+            Write-Warning "Enabling Interactive Services Detection. This requires rebooting the machine before continuing."
             Write-Warning "Run the Script again after the Reboot."
-            reg add "HKLM\SYSTEM\CurrentControlSet\Control\Windows" /v "NoInteractiveServices" /d 0 /t REG_DWORD /f
 
-            # Rebooting the Machine to load the new value
-            Write-Warning "Rebooting in 30 Seconds. Press Ctrl-C to abort!"
-            Start-Sleep -Seconds $REBOOT_DELAY_SECONDS
-            Restart-Computer
+            [Microsoft.Win32.Registry]::SetValue(
+                "HKEY_LOCAL_MACHONE\SYSTEM\CurrentControlSet\Control\Windows",
+                "NoInteractiveServices",
+                0x0,
+                [Microsoft.Win32.RegistryValueKind]::DWORD
+                )
 
-            # Just to be sure
             Return
         }
 
         # Placing the capolicy.inf in the Windows Folder
-        [void](Remove-Item -Path "$($env:systemroot)\capolicy.inf" -Force -ErrorAction SilentlyContinue)
-
         # We must ensure that the capolicy.inf is stored in Windows-1252 (ANSI) to reflect Umlauts and the like
+        [void](Remove-Item -Path "$($env:systemroot)\capolicy.inf" -Force -ErrorAction SilentlyContinue)
+        
         [System.IO.File]::WriteAllText(
             "$($env:systemroot)\capolicy.inf",
             (Get-Content -Path $CaPolFile -Encoding UTF8 -Raw),
@@ -166,13 +165,9 @@
         [void](New-Item -Path $CaDbDir -ItemType Directory -ErrorAction SilentlyContinue)
         [void](New-Item -Path $CaDbLogDir -ItemType Directory -ErrorAction SilentlyContinue)
 
-        # Installing the ADCS Role
-        Add-WindowsFeature Adcs-Cert-Authority -IncludeManagementTools
-
         $Arguments = @{
             CAType = $CaType
             CACommonName = $CaName
-            KeyLength = $KeyLength
             DatabaseDirectory = $CaDbDir
             LogDirectory = $CaDbLogDir
             HashAlgorithm = $HashAlgorithm
@@ -180,7 +175,14 @@
             OverwriteExistingKey = $True
             OverwriteExistingDatabase = $True
             Force = $True
+        }
 
+        Switch ($KeyAlgorithm) {
+
+            "ECDSA_P256" { $Arguments.Add("KeyLength", 256) }
+            "ECDSA_P384" { $Arguments.Add("KeyLength", 384) }
+            "ECDSA_P521" { $Arguments.Add("KeyLength", 521) }
+            "RSA"        { $Arguments.Add("KeyLength", $KeyLength) }
         }
 
         If ($DnSuffix) {
@@ -200,28 +202,24 @@
             $Arguments.Add("OutputCertRequestFile", $CsrFile)
         }
 
-        # This Configures the CA Role.
-        # Sadly the return values seem to be not reliable for determining the outcome.
-        Install-AdcsCertificationAuthority @Arguments
+        # This Installs and configures the CA Role
+        Try {
+            [void](Install-WindowsFeature -Name Adcs-Cert-Authority -IncludeManagementTools)
+            [void](Install-AdcsCertificationAuthority @Arguments)
+        }
+        Catch {
+            Write-Error -Message $PSItem.Exception.Message
+            return
+        }
 
-        # We assume that there is an Interaction needed with the CA Service when this is enabled, 
-        # thus the CA Service will be set to manual
+        # We assume that there is an Interaction needed with the CA Service when this is enabled
         If ($AllowAdminInteraction.IsPresent) {
             Write-Warning "The Active Directory Certificates Service Startup Type was set to Manual due to required Administrator Interaction Setting."
             Set-Service -Name CertSvc -StartupType Manual
         }
 
-        # Test if there is any CA Service installed
-        If (-not (Test-Flag -Flags $(Get-AdcsCaSetupStatus) -Flag $SETUP_SERVER_FLAG)) {
-            Write-Error "Seems that the Role Configuration failed. Aborting!"
-            return            
-        }
-
-        # Rebooting the Machine to update Group Membership of Cert Publishers Group, if it is an Enterprise CA
         If ($CaType -match "Enterprise") {
-            Write-Warning "Rebooting in 30 Seconds to update Active Directory Group Membership. Press Ctrl-C to abort!"
-            Start-Sleep -Seconds $REBOOT_DELAY_SECONDS
-            Restart-Computer
+            Write-Warning "It is advised that you reboot the Machine after the Deployment has finished to reflect its newly-added Domain Group Memberships."
         }
 
     }

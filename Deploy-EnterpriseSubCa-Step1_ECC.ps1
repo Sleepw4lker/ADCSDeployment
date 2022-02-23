@@ -10,6 +10,7 @@ Get-ChildItem -Path "$Script:BaseDirectory\lib" -Filter *.ps1 | ForEach-Object {
 
 New-AdcsCaDeployment `
     -EnterpriseSubordinateCA `
-    -CaName "ADCS Labor Issuing CA 4" `
+    -KeyAlgorithm "ECDSA_P256" `
+    -CaName "ADCS Labor Issuing CA NG 1" `
     -DnSuffix "O=ADCS Labor" ` # the DN Suffix should be specified, otherwise the one from the Domain is taken
-    -CaPolFile "$($Script:BaseDirectory)\Samples\capolicy_SubCA.inf"
+    -CaPolFile "$($Script:BaseDirectory)\Samples\capolicy_SubCA_ECC.inf"
