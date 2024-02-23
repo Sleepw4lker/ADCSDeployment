@@ -8,13 +8,4 @@ Get-ChildItem -Path "$Script:BaseDirectory\lib" -Filter *.ps1 | ForEach-Object {
     . ($_.FullName)
 }
 
-Complete-AdcsCaDeployment `
-    -Cdp "http://pki.adcslabor.de/CertData/%3%8%9.crl","ldap:///CN=%7%8,CN=%3,CN=cdp,CN=Public Key Services,CN=Services,%6%10" `
-    -Aia "http://pki.adcslabor.de/CertData/%3%4.crt","ldap:///CN=%7,CN=aia,CN=Public Key Services,CN=Services,%6%11","http://ocsp.adcslabor.de/ocsp" `
-    -Certfile ".\certnew.cer" `
-    -AuditFilter 126 `
-    -ValidityPeriodUnits 2 `
-    -CrlPeriodUnits 4 `
-    -CrlPeriod "Days" `
-    -CrlOverlapUnits 4 `
-    -CrlOverlapPeriod "Days"
+Complete-AdcsCaDeployment -Certfile ".\certnew.cer"

@@ -37,8 +37,3 @@ RenewalValidityPeriodUnits=8
 ; So this should be OK from a Security perspective.
 ; If nothing is specified, 1.5 will be used.
 AlternateSignatureAlgorithm=0
-
-; Uncomment if the Subject and Issuer of the Root CA Certificate must be encoded 
-; with UTF-8 (Common PKI Standard).
-; Otherwise it will be encoded as PrintableString.
-ForceUTF8=1

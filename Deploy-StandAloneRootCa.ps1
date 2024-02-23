@@ -13,8 +13,6 @@ New-AdcsCaDeployment `
     -CaName "ADCS Labor Root CA 1" `
     -CaPolFile "$($Script:BaseDirectory)\Samples\capolicy_RootCA.inf" `
     -CaCertValidityPeriodUnits 16 `
-
-Complete-AdcsCaDeployment `
     -DsConfigDn "CN=Configuration,DC=Fabrikam,DC=com" `
     -Cdp "http://pki.adcslabor.de/CertData/%3%8%9.crl","ldap:///CN=%7%8,CN=%3,CN=cdp,CN=Public Key Services,CN=Services,%6%10" `
     -Aia "http://pki.adcslabor.de/CertData/%3%4.crt","ldap:///CN=%7,CN=aia,CN=Public Key Services,CN=Services,%6%11" `

@@ -14,8 +14,6 @@ New-AdcsCaDeployment `
     -KeyAlgorithm "ECDSA_P256" `
     -CaPolFile "$($Script:BaseDirectory)\Samples\capolicy_RootCA_ECC.inf" `
     -CaCertValidityPeriodUnits 16 `
-
-Complete-AdcsCaDeployment `
     -Cdp "http://pki.adcslabor.de/CertData/%3%8%9.crl" `
     -Aia "http://pki.adcslabor.de/CertData/%3%4.crt" `
     -ValidityPeriodUnits 8 `
