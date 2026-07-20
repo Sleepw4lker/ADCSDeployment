@@ -66,6 +66,7 @@ Critical=TRUE
 ; The following Settings will only have effect on CA Certificate renewals
 RenewalKeyLength=4096
 
+; Only applies to Enterprise certification authorities
 ; LoadDefaultTemplates=0 will prevent the CA from instantly loading default 
 ; Certificate Templates after CA installation
 LoadDefaultTemplates=0

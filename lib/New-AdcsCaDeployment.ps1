@@ -115,7 +115,7 @@ function New-AdcsCaDeployment {
         $EncryptionCsp = "Microsoft Software Key Storage Provider",
 
         [Parameter(Mandatory=$False)]
-        [ValidateSet("RSA","ECDSA_P256","ECDSA_P384","ECDSA_P521")]
+        [ValidateSet("RSA","ECDSA_P256","ECDSA_P384","ECDSA_P521", "ML-DSA:44", "ML-DSA:65", "ML-DSA:87")]
         [String]
         $KeyAlgorithm = "RSA",
 
@@ -298,7 +298,6 @@ function New-AdcsCaDeployment {
             CACommonName = $CaName
             DatabaseDirectory = $CaDbDir
             LogDirectory = $CaDbLogDir
-            HashAlgorithm = $HashAlgorithm
             CryptoProviderName = "$($KeyAlgorithm)#$($KspName)"
             OverwriteExistingKey = $True
             OverwriteExistingDatabase = $True
@@ -319,6 +318,13 @@ function New-AdcsCaDeployment {
             "ECDSA_P384" { $Arguments.Add("KeyLength", 384) }
             "ECDSA_P521" { $Arguments.Add("KeyLength", 521) }
             "RSA"        { $Arguments.Add("KeyLength", $KeyLength) }
+        }
+
+        if ($KeyAlgorithm.StartsWith("ML-DSA")){
+            $Arguments.Add("HashAlgorithm", "NoHash")
+        }
+        else {
+            $Arguments.Add("HashAlgorithm", $HashAlgorithm)
         }
 
         If ($DnSuffix) {

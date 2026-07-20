@@ -11,7 +11,7 @@ Get-ChildItem -Path "$Script:BaseDirectory\lib" -Filter *.ps1 | ForEach-Object {
 New-AdcsCaDeployment `
     -EnterpriseSubordinateCA `
     -KeyAlgorithm "ECDSA_P256" `
-    -CaName "ADCS Labor Issuing CA NG 1" `
+    -CaName "ADCS Labor ECC Issuing CA 1" `
     -DnSuffix "O=ADCS Labor" `
     -CaPolFile "$($Script:BaseDirectory)\Samples\capolicy_SubCA_ECC.inf" `
     -Cdp "http://pki.adcslabor.de/CertData/%3%8%9.crl","ldap:///CN=%7%8,CN=%3,CN=cdp,CN=Public Key Services,CN=Services,%6%10" `

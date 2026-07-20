@@ -27,6 +27,11 @@ RenewalKeyLength=256
 RenewalValidityPeriod=Years
 RenewalValidityPeriodUnits=8
 
+; Only applies to Enterprise certification authorities
+; LoadDefaultTemplates=0 will prevent the CA from instantly loading default 
+; Certificate Templates after CA installation
+LoadDefaultTemplates=0
+
 ; AlternateSignatureAlgorithm=0 makes the CA use PKCS#1 1.5 for Signatures
 ; AlternateSignatureAlgorithm=1 makes the CA use PKCS#1 2.1 for Signatures
 ; From a security perspective, PKCS#1 2.1 is recommended.

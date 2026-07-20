@@ -10,7 +10,7 @@ Get-ChildItem -Path "$Script:BaseDirectory\lib" -Filter *.ps1 | ForEach-Object {
 
 New-AdcsCaDeployment `
     -StandAloneRootCA `
-    -CaName "ADCS Labor Root CA NG 1" `
+    -CaName "ADCS Labor ECC Root CA 1" `
     -KeyAlgorithm "ECDSA_P256" `
     -CaPolFile "$($Script:BaseDirectory)\Samples\capolicy_RootCA_ECC.inf" `
     -CaCertValidityPeriodUnits 16 `
